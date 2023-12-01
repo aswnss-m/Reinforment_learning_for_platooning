@@ -19,7 +19,7 @@ def run_simulation():
             if step == 100:
                 add_custom_vehicle_type()
                 for i in range(10):
-                    traci.vehicle.add(str(i), "custom_vehicle", departPos=str(i*10), departSpeed="0")
+                    traci.vehicle.add(str(i), departPos=str(i*10), departSpeed="0")
 
         traci.close()
     except Exception as e:
