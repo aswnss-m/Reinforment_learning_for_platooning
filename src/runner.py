@@ -29,7 +29,7 @@ def run():
     step = 0
     while traci.simulation.getMinExpectedNumber() > 0:
         traci.simulationStep()
-        print(step)
+        # print(step)
 
         det_vehs = traci.inductionloop.getLastStepVehicleIDs("det_0")
         print(det_vehs)
