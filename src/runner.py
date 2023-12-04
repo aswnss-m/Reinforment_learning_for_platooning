@@ -1,30 +1,63 @@
+#!/usr/bin/env python
+
 import os
 import sys
+import optparse
+
+# we need to import some python modules from the $SUMO_HOME/tools directory
+if 'SUMO_HOME' in os.environ:
+    tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
+    sys.path.append(tools)
+else:
+    sys.exit("please declare environment variable 'SUMO_HOME'")
+
+
+from sumolib import checkBinary  # Checks for the binary in environ vars
 import traci
-import traci.constants as tc
-def add_custom_vehicle_type():
-    traci.vehicle.addVType("custom_vehicle", accel=2.0, decel=4.5, sigma=0.5, length=5.0, maxSpeed=30.0)
 
 
-def run_simulation():
-    sumo_cmd = ["sumo", "-c", "./assets/maps/A13NorthCircularRoundabout/A13NorthCircularRoundabout.sumocfg"]
-    traci.start(sumo_cmd)
+def get_options():
+    opt_parser = optparse.OptionParser()
+    opt_parser.add_option("--nogui", action="store_true",
+                         default=False, help="run the commandline version of sumo")
+    options, args = opt_parser.parse_args()
+    return options
 
-    try:
-        # Your simulation logic here
-        for step in range(1000):
-            traci.simulationStep()
 
-            # Add 10 vehicles after some steps
-            if step == 100:
-                add_custom_vehicle_type()
-                for i in range(10):
-                    traci.vehicle.add(str(i), departPos=str(i*10), departSpeed="0")
+# contains TraCI control loop
+def run():
+    step = 0
+    while traci.simulation.getMinExpectedNumber() > 0:
+        traci.simulationStep()
+        print(step)
 
-        traci.close()
-    except Exception as e:
-        print(f"Error during simulation: {e}")
-        traci.close()
+        det_vehs = traci.inductionloop.getLastStepVehicleIDs("det_0")
+        print(det_vehs)
+        for veh in det_vehs:
+            # print(veh)
+            traci.vehicle.changeLane(veh, 2, 25)
 
+        # if step == 100:
+        #     traci.vehicle.changeTarget("1", "e9")
+        #     traci.vehicle.changeTarget("3", "e9")
+
+        step += 1
+
+    traci.close()
+    sys.stdout.flush()
+
+
+# main entry point
 if __name__ == "__main__":
-    run_simulation()
+    options = get_options()
+
+    # check binary
+    if options.nogui:
+        sumoBinary = checkBinary('sumo')
+    else:
+        sumoBinary = checkBinary('sumo-gui')
+
+    # traci starts sumo as a subprocess and then this script connects and runs
+    traci.start([sumoBinary, "-c", "./assets/maps/demo/demo.sumocfg",
+                             "--tripinfo-output", "tripinfo.xml"])
+    run()
