@@ -3,14 +3,14 @@
 import os
 import sys
 import optparse
+import pandas as pd
 
-# we need to import some python modules from the $SUMO_HOME/tools directory
+# Import necessary modules from the $SUMO_HOME/tools directory
 if 'SUMO_HOME' in os.environ:
     tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
     sys.path.append(tools)
 else:
-    sys.exit("please declare environment variable 'SUMO_HOME'")
-
+    sys.exit("Please declare the environment variable 'SUMO_HOME'")
 
 from sumolib import checkBinary  # Checks for the binary in environ vars
 import traci
@@ -19,49 +19,65 @@ import traci
 def get_options():
     opt_parser = optparse.OptionParser()
     opt_parser.add_option("--nogui", action="store_true",
-                         default=False, help="run the commandline version of sumo")
+                         default=False, help="Run the command-line version of sumo")
     options, args = opt_parser.parse_args()
     return options
 
 
-# contains TraCI control loop
 def run():
     step = 0
-    while step <=1000:
+    data = []
+
+    while step <= 1000:
         traci.simulationStep()
-        vehicleIds = traci.vehicle.getIDList() # get the list of all vehicles
-        for veh_id in vehicleIds:
-            velocity = traci.vehicle.getSpeed(veh_id)
-            lane_position = traci.vehicle.getLanePosition(veh_id)
-        # Print current velocity and lane position for each vehicle
+        vehicle_ids = traci.vehicle.getIDList()  # Get the list of all vehicles
+
+        for veh_id in vehicle_ids:
+            # Get vehicle information
+            speed = traci.vehicle.getSpeed(veh_id)
+            position = traci.vehicle.getPosition(veh_id)
+            route = traci.vehicle.getRoute(veh_id)
             follower = traci.vehicle.getFollower(veh_id)
+            lane = traci.vehicle.getLaneID(veh_id)
+            acceleration = traci.vehicle.getAcceleration(veh_id)
+            # Append the information to the data list
+            data.append({
+                'Step': step,
+                'VehicleID': veh_id,
+                'Speed': speed,
+                'Position': position,
+                'Route': route,
+                'Follower' : follower,
+                'Lane' : lane,
+                'Acceleration': acceleration
+            })
 
-        det_vehs = traci.inductionloop.getLastStepVehicleIDs("det_0")
-        for veh in det_vehs:
-            # print(veh)
-            traci.vehicle.changeLane(veh, 2, 25)
-
-        # if step == 100:
-        #     traci.vehicle.changeTarget("1", "e9")
-        #     traci.vehicle.changeTarget("3", "e9")
-
+        # Increment the step
         step += 1
 
+    # Close the simulation and TraCI
     traci.close()
-    sys.stdout.flush()
+
+    # Convert the data list to a pandas DataFrame
+    df = pd.DataFrame(data)
+
+    # Optionally, save the data to a CSV file using pandas
+    df.to_csv('vehicle_data.csv', index=False)
 
 
-# main entry point
+# Main entry point
 if __name__ == "__main__":
     options = get_options()
 
-    # check binary
+    # Check binary
     if options.nogui:
-        sumoBinary = checkBinary('sumo')
+        sumo_binary = checkBinary('sumo')
     else:
-        sumoBinary = checkBinary('sumo-gui')
+        sumo_binary = checkBinary('sumo-gui')
 
-    # traci starts sumo as a subprocess and then this script connects and runs
-    traci.start([sumoBinary, "-c", "./assets/maps/demo/demo.sumocfg",
-                             "--tripinfo-output", "tripinfo.xml"])
+    # Start SUMO as a subprocess and connect with TraCI
+    traci.start([sumo_binary, "-c", "./assets/maps/demo/demo.sumocfg",
+                 "--tripinfo-output", "tripinfo.xml"])
+
+    # Run the simulation and collect data
     run()
