@@ -9,8 +9,8 @@
       		minGapLat="0.2"/>
 
     <route id="route_0" edges="e1 e2 e3 e4 e5 e6 e7 e8" />
-    <!--<flow id="carflow" type="car" beg="0" end="0" number="5" from="e1" to="e8"/>-->
-    <!--<flow id="evflow" type="ev" beg="0" end="0" number="1" from="e1" to="e8"/>-->
+    <!-- <flow id="carflow" type="car" beg="0" end="0" number="5" from="e1" to="e8"/> -->
+    <!-- <flow id="evflow" type="ev" beg="0" end="0" number="1" from="e1" to="e8"/> -->
 
     <vehicle id="0" type="car" route="route_0" depart="0"/>
     <vehicle id="1" type="car" route="route_0" depart="3"/>

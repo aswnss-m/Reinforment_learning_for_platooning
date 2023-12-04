@@ -27,12 +27,16 @@ def get_options():
 # contains TraCI control loop
 def run():
     step = 0
-    while traci.simulation.getMinExpectedNumber() > 0:
+    while step <=1000:
         traci.simulationStep()
-        # print(step)
+        vehicleIds = traci.vehicle.getIDList() # get the list of all vehicles
+        for veh_id in vehicleIds:
+            velocity = traci.vehicle.getSpeed(veh_id)
+            lane_position = traci.vehicle.getLanePosition(veh_id)
+        # Print current velocity and lane position for each vehicle
+            follower = traci.vehicle.getFollower(veh_id)
 
         det_vehs = traci.inductionloop.getLastStepVehicleIDs("det_0")
-        print(det_vehs)
         for veh in det_vehs:
             # print(veh)
             traci.vehicle.changeLane(veh, 2, 25)
