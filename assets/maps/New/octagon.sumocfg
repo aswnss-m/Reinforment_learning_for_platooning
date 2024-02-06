@@ -1,0 +1,7 @@
+<configuration>
+    <input>
+       <net-file value="octagon.net.xml"/>
+       <route-files value="octagon.rou.xml"/>
+       <additional-files value="octagon.add.xml" />
+    </input>
+</configuration>
