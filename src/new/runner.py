@@ -1,61 +1,45 @@
-
-import os
-import sys
-import optparse
-import pandas as pd
-
-# Import necessary modules from the $SUMO_HOME/tools directory
-if 'SUMO_HOME' in os.environ:
-    tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
-    sys.path.append(tools)
-else:
-    sys.exit("Please declare the environment variable 'SUMO_HOME'")
-
-from sumolib import checkBinary  # Checks for the binary in environ vars
 import traci
 
-def run():
-    step = 0
-    data = []
+def print_menu():
+    print("1. Change speed")
+    print("2. Change lane")
+    print("3. Run simulation for 1000 steps")
+    print("4. Quit")
 
-    while step <= 1000:
+def change_speed():
+    new_speed = float(input("Enter new speed (km/h): "))
+    traci.vehicle.setSpeed("vehicle1", new_speed)
+    print("Speed changed to", new_speed, "km/h")
+
+def change_lane():
+    current_lane = traci.vehicle.getLaneIndex("vehicle1")
+    if current_lane == 0:
+        target_lane = 1
+    else:
+        target_lane = 0
+    traci.vehicle.changeLane("vehicle1", target_lane, 50)
+    print("Lane changed to", target_lane)
+
+def run_simulation():
+    for i in range(1000):
         traci.simulationStep()
-        vehicle_ids = traci.vehicle.getIDList()  # Get the list of all vehicles
 
-        for veh_id in vehicle_ids:
-            # Get vehicle information
-            speed = traci.vehicle.getSpeed(veh_id)
-            position = traci.vehicle.getPosition(veh_id)
-            route = traci.vehicle.getRoute(veh_id)
-            follower = traci.vehicle.getFollower(veh_id)
-            lane = traci.vehicle.getLaneID(veh_id)
-            acceleration = traci.vehicle.getAcceleration(veh_id)
-            # Append the information to the data list
-            data.append({
-                'Step': step,
-                'VehicleID': veh_id,
-                'Speed': speed,
-                'Position': position,
-                'Route': route,
-                'Follower' : follower,
-                'Lane' : lane,
-                'Acceleration': acceleration
-            })
+def main():
+    traci.init("sumo-traffic-light.sumocfg")
+    while True:
+        print_menu()
+        choice = input("Enter your choice: ")
+        if choice == "1":
+            change_speed()
+        elif choice == "2":
+            change_lane()
+        elif choice == "3":
+            run_simulation()
+        elif choice == "4":
+            traci.close()
+            break
+        else:
+            print("Invalid choice. Please try again.")
 
-        # Increment the step
-        step += 1
-
-    # Close the simulation and TraCI
-    traci.close()
-
-    # Convert the data list to a pandas DataFrame
-    df = pd.DataFrame(data)
-
-    # Optionally, save the data to a CSV file using pandas
-    df.to_csv('vehicle_data.csv', index=False)
-
-if __name__=="__main__":
-    sumo_binary = checkBinary('sumo-gui')
-    traci.start([sumo_binary, "-c", "./assets/maps/new/octagon.sumocfg",
-                 "--tripinfo-output", "tripinfo.xml"])
-    run()
+if __name__ == "__main__":
+    main()
