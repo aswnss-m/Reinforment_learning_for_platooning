@@ -16,6 +16,7 @@ def run():
         if (step%200==0):
             # change the speed of random vehicle
             vehicle_ids = traci.vehicle.getIDList()
+            print(vehicle_ids)
             random_vehicle = random.choice(vehicle_ids)
             curr_speed = traci.vehicle.getSpeed(random_vehicle)
             print(step)
