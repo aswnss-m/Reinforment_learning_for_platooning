@@ -62,13 +62,36 @@ class PlatooningEnv(gym.Env):
         pygame.init()
         self.window = pygame.display.set_mode((self.width, self.height))
 
+    # def reset(self):
+    #     self.following_distance = self.config['following_distance']
+    #     self.following_velocity = np.random.uniform(low=self.leader_velocity - 5, high=self.leader_velocity + 5)
+    #     self.following_pos = (self.width // 2 - self.following_distance, self.height // 2)
     def reset(self):
         self.following_distance = self.config['following_distance']
         self.following_velocity = np.random.uniform(low=self.leader_velocity - 5, high=self.leader_velocity + 5)
         self.following_pos = (self.width // 2 - self.following_distance, self.height // 2)
+        return np.array([self.following_distance, self.following_velocity])
 
+    # def step(self, action):
+    #     # Update the following AV's velocity based on the chosen action
+    #     if action == 0:  # Accelerate
+    #         self.following_velocity += self.config['acceleration']
+    #     elif action == 1:  # Maintain speed
+    #         pass
+    #     else:  # Decelerate
+    #         self.following_velocity -= self.config['acceleration']
+
+    #     # Compute the reward
+    #     reward = -np.abs(self.following_velocity - self.leader_velocity) - np.abs(self.following_distance - self.config['desired_distance'])
+
+    #     # Update the following AV's distance to the leader
+    #     self.following_distance += self.following_velocity
+
+    #     # Check if the episode is done
+    #     done = self.following_distance > self.config['max_distance'] or self.following_distance < self.config['min_distance']
+
+    #     return np.array([self.following_distance, self.following_velocity]), reward, done, {}
     def step(self, action):
-        # Update the following AV's velocity based on the chosen action
         if action == 0:  # Accelerate
             self.following_velocity += self.config['acceleration']
         elif action == 1:  # Maintain speed
@@ -76,14 +99,20 @@ class PlatooningEnv(gym.Env):
         else:  # Decelerate
             self.following_velocity -= self.config['acceleration']
 
-        # Compute the reward
-        reward = -np.abs(self.following_velocity - self.leader_velocity) - np.abs(self.following_distance - self.config['desired_distance'])
-
         # Update the following AV's distance to the leader
         self.following_distance += self.following_velocity
 
+        # Compute the reward
+        reward = -np.abs(self.following_velocity - self.leader_velocity) - np.abs(self.following_distance - self.config['desired_distance'])
+
         # Check if the episode is done
         done = self.following_distance > self.config['max_distance'] or self.following_distance < self.config['min_distance']
+
+        # Update the following AV's position
+        self.following_pos = (self.following_pos[0] + self.following_velocity, self.following_pos[1])
+
+        # Render the environment
+        self.render()
 
         return np.array([self.following_distance, self.following_velocity]), reward, done, {}
 
@@ -128,6 +157,7 @@ class QLearningAgent:
 # Train the RL agent
 config = {'leader_velocity': 60, 'following_distance': 10, 'desired_distance': 15, 'acceleration': 2, 'max_distance': 100, 'min_distance': 0}
 env = PlatooningEnv(config)
+state = env.reset()
 agent = QLearningAgent(env.observation_space, env.action_space)
 
 num_episodes = 1000
@@ -138,7 +168,8 @@ for episode in range(num_episodes):
     while not done:
         action = agent.get_action(state)
         next_state, reward, done, _ = env.step(action)
-        agent.update_Q(state, action, reward, next_state, done)
+        if next_state is not None:
+            agent.update_Q(state, action, reward, next_state, done)
         state = next_state
         env.render()
 
