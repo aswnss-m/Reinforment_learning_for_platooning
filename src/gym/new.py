@@ -1,5 +1,6 @@
 import numpy as np
 import gym
+import pygame
 from gym import spaces
 import hashlib
 def hash_state(state):
@@ -7,18 +8,64 @@ def hash_state(state):
     return int(hashlib.sha256(state_str.encode('utf-8')).hexdigest(), 16) % (10 ** 8)
 
 # Custom Platooning Environment
+# class PlatooningEnv(gym.Env):
+#     def __init__(self, config):
+#         self.config = config
+#         self.action_space = spaces.Discrete(3)  # 3 possible actions: accelerate, maintain speed, decelerate
+#         self.observation_space = spaces.Box(low=0.0, high=100.0, shape=(2,), dtype=np.float32)
+
+#     def reset(self):
+#         # Initialize the states
+#         self.leader_velocity = self.config['leader_velocity']
+#         self.following_distance = self.config['following_distance']
+#         self.following_velocity = np.random.uniform(low=self.leader_velocity - 5, high=self.leader_velocity + 5)
+#         return np.array([self.following_distance, self.following_velocity])
+
+#     def step(self, action):
+#         # Update the following AV's velocity based on the chosen action
+#         if action == 0:  # Accelerate
+#             self.following_velocity += self.config['acceleration']
+#         elif action == 1:  # Maintain speed
+#             pass
+#         else:  # Decelerate
+#             self.following_velocity -= self.config['acceleration']
+
+#         # Compute the reward
+#         reward = -np.abs(self.following_velocity - self.leader_velocity) - np.abs(self.following_distance - self.config['desired_distance'])
+
+#         # Update the following AV's distance to the leader
+#         self.following_distance += self.following_velocity
+
+#         # Check if the episode is done
+#         done = self.following_distance > self.config['max_distance'] or self.following_distance < self.config['min_distance']
+
+#         return np.array([self.following_distance, self.following_velocity]), reward, done, {}
+#     def render(self, mode='human'):
+#         print(f"Leader Velocity: {self.leader_velocity}, Following Velocity: {self.following_velocity}, Distance: {self.following_distance}")
+import pygame
+import numpy as np
+
 class PlatooningEnv(gym.Env):
     def __init__(self, config):
         self.config = config
         self.action_space = spaces.Discrete(3)  # 3 possible actions: accelerate, maintain speed, decelerate
-        self.observation_space = spaces.Box(low=0.0, high=100.0, shape=(2,), dtype=np.float32)
-
-    def reset(self):
-        # Initialize the states
+        self.observation_space = spaces.Box(low=0, high=100, shape=(2,), dtype=np.float32)
+        self.width, self.height = 800, 400
+        self.leader_pos = (self.width // 2, self.height // 2)
+        self.following_pos = None
         self.leader_velocity = self.config['leader_velocity']
         self.following_distance = self.config['following_distance']
         self.following_velocity = np.random.uniform(low=self.leader_velocity - 5, high=self.leader_velocity + 5)
-        return np.array([self.following_distance, self.following_velocity])
+        self.frame_rate = 60
+        self.window = None
+
+        pygame.init()
+        self.window = pygame.display.set_mode((self.width, self.height))
+
+    def reset(self):
+        self.following_distance = self.config['following_distance']
+        self.following_velocity = np.random.uniform(low=self.leader_velocity - 5, high=self.leader_velocity + 5)
+        self.following_pos = (self.width // 2 - self.following_distance, self.height // 2)
 
     def step(self, action):
         # Update the following AV's velocity based on the chosen action
@@ -39,9 +86,17 @@ class PlatooningEnv(gym.Env):
         done = self.following_distance > self.config['max_distance'] or self.following_distance < self.config['min_distance']
 
         return np.array([self.following_distance, self.following_velocity]), reward, done, {}
-    def render(self, mode='human'):
-        print(f"Leader Velocity: {self.leader_velocity}, Following Velocity: {self.following_velocity}, Distance: {self.following_distance}")
 
+    def render(self):
+        self.window.fill((0, 0, 0))
+        pygame.draw.circle(self.window, (0, 255, 0), self.leader_pos, 10)
+        if self.following_pos is not None:
+            pygame.draw.circle(self.window, (255, 0, 0), self.following_pos, 10)
+        pygame.display.flip()
+        pygame.time.Clock().tick(self.frame_rate)
+
+    def close(self):
+        pygame.quit()
 # Q-learning agent
 # class QLearningAgent:
 #     def __init__(self, observation_space, action_space):
