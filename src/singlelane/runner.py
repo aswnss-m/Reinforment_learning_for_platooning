@@ -33,7 +33,7 @@ def run():
             if headway > 20:
                 traci.vehicle.setAcceleration(follower,10,60)
             elif headway < 10:
-                traci.vehicle.setAcceleration(follower,1,60)
+                traci.vehicle.setAcceleration(follower,5,60)
         step +=1
 
         if leader_present : 
