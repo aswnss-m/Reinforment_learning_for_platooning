@@ -64,7 +64,7 @@ def run():
         
 
 if __name__ == "__main__":
-    sumo_binary = checkBinary('sumo')
+    sumo_binary = checkBinary('sumo-gui')
     # Start SUMO as a subprocess and connect with TraCI
     traci.start([sumo_binary, "-c", "./assets/maps/singlelane/singlelane.sumocfg",
                  "--tripinfo-output", "tripinfo.xml"])
